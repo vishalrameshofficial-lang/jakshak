@@ -7,10 +7,8 @@ dist/
 build/
 
 # Database files
-*.db
+!backend/prisma/dev.db
 *.db-journal
-backend/prisma/dev.db
-backend/prisma/dev.db-journal
 
 # Environment variables
 .env

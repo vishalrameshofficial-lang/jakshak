@@ -10,6 +10,13 @@ import { generateNextReading } from "./services/simulatorService";
 import { analyzeReading } from "./services/anomalyEngine";
 import { calculateWaterRisk } from "./services/riskEngine";
 
+import path from "path";
+
+if (!process.env.DATABASE_URL) {
+  const dbPath = path.resolve(__dirname, "..", "prisma", "dev.db");
+  process.env.DATABASE_URL = `file:${dbPath}`;
+}
+
 dotenv.config();
 
 const app = express();
