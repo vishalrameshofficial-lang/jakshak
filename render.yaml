@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: jal-rakshak-backend
+    runtime: node
+    region: singapore
+    rootDir: backend
+    buildCommand: npm install && npm run render-build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: FRONTEND_URL
+        value: https://jakshak-git-main-imperium15.vercel.app

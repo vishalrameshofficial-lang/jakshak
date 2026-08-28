@@ -4,12 +4,13 @@
   "description": "JAL-RAKSHAK Smart Water Intelligence Platform Backend",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "npx prisma generate && npx prisma db push && tsc",
     "start": "node dist/index.js",
     "dev": "ts-node src/index.ts",
     "prisma:generate": "prisma generate",
     "prisma:db:push": "prisma db push",
-    "db:seed": "ts-node prisma/seed.ts"
+    "db:seed": "ts-node prisma/seed.ts",
+    "render-build": "npx prisma generate && npx prisma db push && tsc && node dist/prisma/seed.js || true"
   },
   "dependencies": {
     "@prisma/client": "^5.10.0",

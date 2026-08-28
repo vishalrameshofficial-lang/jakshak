@@ -47,8 +47,14 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // WebSocket real-time subscription
   useEffect(() => {
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
+    const wsEnvUrl = import.meta.env.VITE_WS_URL;
+    let wsUrl: string;
+    if (wsEnvUrl) {
+      wsUrl = wsEnvUrl;
+    } else {
+      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+      wsUrl = `${protocol}//${window.location.host}/ws`;
+    }
     const socket = new WebSocket(wsUrl);
 
     socket.onmessage = (event) => {
