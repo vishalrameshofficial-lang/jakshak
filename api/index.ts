@@ -3,11 +3,8 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 
-// Initialize DATABASE_URL to backend/prisma/dev.db if not provided
-if (!process.env.DATABASE_URL) {
-  const dbPath = path.resolve(process.cwd(), "backend", "prisma", "dev.db");
-  process.env.DATABASE_URL = `file:${dbPath}`;
-}
+const dbPath = path.resolve(process.cwd(), "backend", "prisma", "dev.db");
+process.env.DATABASE_URL = process.env.DATABASE_URL || `file:${dbPath}`;
 
 dotenv.config();
 
@@ -30,7 +27,8 @@ app.get("/api/health", (req, res) => {
     status: "OK",
     platform: "JAL-RAKSHAK Smart Water Intelligence Platform",
     version: "1.0.0-sih",
-    environment: "Vercel Serverless"
+    environment: "Vercel Serverless",
+    dbConfigured: !!process.env.DATABASE_URL
   });
 });
 

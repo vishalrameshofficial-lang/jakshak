@@ -2,6 +2,11 @@
   "version": 2,
   "buildCommand": "npm run build",
   "outputDirectory": "frontend/dist",
+  "functions": {
+    "api/index.ts": {
+      "includeFiles": "backend/prisma/dev.db"
+    }
+  },
   "rewrites": [
     {
       "source": "/api/(.*)",
