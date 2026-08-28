@@ -28,7 +28,7 @@ export const TreatmentPage: React.FC = () => {
     fetchTreatment();
   }, [activeSource]);
 
-  const stages = treatmentData?.data?.recommendation?.stages?.map((s: any) => ({
+  const stages = treatmentData?.recommendation?.stages?.map((s: any) => ({
     id: s.stageId,
     name: s.stageName,
     active: treatmentData?.currentState?.stagesActive?.includes(s.valveId) || treatmentData?.currentState?.stagesActive?.includes(s.stageId),
