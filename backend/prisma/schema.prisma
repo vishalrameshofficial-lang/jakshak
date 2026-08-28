@@ -1,0 +1,209 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String     @id @default(uuid())
+  email        String     @unique
+  passwordHash String
+  name         String
+  role         String     @default("OPERATOR") // ADMIN, OPERATOR, VIEWER
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  AuditLog     AuditLog[]
+}
+
+model WaterSource {
+  id               String           @id @default(uuid())
+  code             String           @unique
+  name             String
+  village          String
+  district         String
+  state            String
+  type             String           @default("BOREWELL") // BOREWELL, COMMUNITY_TANK, WELL, RIVER
+  isMiningAffected Boolean          @default(false)
+  latitude         Float
+  longitude        Float
+  status           String           @default("SAFE") // SAFE, WATCH, WARNING, CRITICAL, OFFLINE
+  currentRiskScore Int              @default(15)
+  lastUpdate       DateTime         @default(now())
+  createdAt        DateTime         @default(now())
+  
+  baseline         WaterBaseline?
+  readings         SensorReading[]
+  anomalies        AnomalyEvent[]
+  treatmentCycles  TreatmentCycle[]
+  filters          FilterState[]
+  labSamples       LabSample[]
+  device           Device?
+}
+
+model WaterBaseline {
+  id            String      @id @default(uuid())
+  sourceId      String      @unique
+  source        WaterSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  phMean        Float       @default(7.1)
+  phStd         Float       @default(0.2)
+  tdsMean       Float       @default(420.0)
+  tdsStd        Float       @default(35.0)
+  ecMean        Float       @default(650.0)
+  ecStd         Float       @default(45.0)
+  turbidityMean Float       @default(1.1)
+  turbidityStd  Float       @default(0.15)
+  tempMean      Float       @default(26.5)
+  tempStd       Float       @default(1.2)
+  sampleCount   Int         @default(500)
+  updatedAt     DateTime    @updatedAt
+}
+
+model SensorReading {
+  id           String      @id @default(uuid())
+  sourceId     String
+  source       WaterSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  timestamp    DateTime    @default(now())
+  ph           Float
+  tds          Float
+  ec           Float
+  turbidity    Float
+  temperature  Float
+  flowRate     Float       @default(3.5)
+  waterLevel   Float       @default(75.0)
+  riskScore    Int
+  anomalyScore Float
+  isAnomaly    Boolean     @default(false)
+
+  @@index([sourceId, timestamp])
+}
+
+model AnomalyEvent {
+  id             String      @id @default(uuid())
+  sourceId       String
+  source         WaterSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  timestamp      DateTime    @default(now())
+  eventType      String      // SUDDEN_PH_CHANGE, HIGH_TDS, HIGH_TURBIDITY, HIGH_EC, MULTI_PARAMETER_ANOMALY, etc.
+  severity       String      @default("WARNING") // INFO, WARNING, CRITICAL
+  priorityScore  Int         @default(50)
+  title          String
+  message        String
+  status         String      @default("ACTIVE") // ACTIVE, ACKNOWLEDGED, RESOLVED
+  acknowledgedBy String?
+  resolvedAt     DateTime?
+  detailsJson    String?     // JSON string of contributing factors
+}
+
+model TreatmentCycle {
+  id               String      @id @default(uuid())
+  sourceId         String
+  source           WaterSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  startTime        DateTime    @default(now())
+  endTime          DateTime?
+  inputVolumeL     Float       @default(0.0)
+  treatedVolumeL   Float       @default(0.0)
+  recoveredVolumeL Float       @default(0.0)
+  rejectedVolumeL  Float       @default(0.0)
+  recoveryRatio    Float       @default(0.0)
+  status           String      @default("IN_PROGRESS") // IN_PROGRESS, SUCCESS, FAILED_RECIRCULATING, FAILED
+  stagesActiveJson String      // JSON array of stages active
+  failureReason    String?
+}
+
+model FilterState {
+  id               String       @id @default(uuid())
+  sourceId         String
+  source           WaterSource  @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  stageName        String       // Sediment, Carbon, Media, RO, UV
+  healthPercent    Float        @default(100.0)
+  volumeProcessedL Float        @default(0.0)
+  turbidityExposure Float       @default(0.0)
+  runtimeHours     Float        @default(0.0)
+  estimatedRulDays Int          @default(90)
+  status           String       @default("GOOD") // GOOD, SERVICE_SOON, REPLACE_NOW
+  updatedAt        DateTime     @updatedAt
+
+  @@unique([sourceId, stageName])
+}
+
+model LabSample {
+  id             String       @id @default(uuid())
+  sampleCode     String       @unique
+  sourceId       String
+  source         WaterSource  @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  collectionDate DateTime     @default(now())
+  collectedBy    String
+  reason         String
+  status         String       @default("PENDING") // PENDING, VERIFIED
+  verifiedAt     DateTime?
+  result         LabResult?
+}
+
+model LabResult {
+  id              String    @id @default(uuid())
+  sampleId        String    @unique
+  sample          LabSample @relation(fields: [sampleId], references: [id], onDelete: Cascade)
+  ph              Float
+  tds             Float
+  turbidity       Float
+  iron            Float?
+  manganese       Float?
+  fluoride        Float?
+  arsenic         Float?
+  lead            Float?
+  nitrate         Float?
+  testNotes       String?
+  calibrationUsed Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+}
+
+model Device {
+  id              String         @id @default(uuid())
+  deviceCode      String         @unique
+  sourceId        String         @unique
+  source          WaterSource    @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  firmwareVersion String         @default("v2.4.1-sih")
+  batteryLevel    Float          @default(94.0)
+  signalStrength  Int            @default(-68)
+  status          String         @default("ONLINE") // ONLINE, DEGRADED, OFFLINE, SENSOR_ERROR
+  lastHeartbeat   DateTime       @default(now())
+  sensors         SensorHealth[]
+  createdAt       DateTime       @default(now())
+}
+
+model SensorHealth {
+  id               String   @id @default(uuid())
+  deviceId         String
+  device           Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  sensorType       String   // PH, TDS, EC, TURBIDITY, TEMP, FLOW, LEVEL
+  status           String   @default("GOOD") // GOOD, WARNING, FAULT
+  message          String   @default("Operational")
+  lastCalibratedAt DateTime @default(now())
+
+  @@unique([deviceId, sensorType])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userName  String   @default("System")
+  action    String
+  target    String
+  details   String
+  timestamp DateTime @default(now())
+}
+
+model SystemThreshold {
+  id             String   @id @default(uuid())
+  parameter      String   @unique // pH, TDS, EC, Turbidity, Temperature
+  lowerLimit     Float
+  upperLimit     Float
+  warningLimit   Float
+  criticalLimit  Float
+  unit           String
+  standardSource String   @default("IS 10500:2012 Drinking Water Standard")
+  updatedAt      DateTime @updatedAt
+}
